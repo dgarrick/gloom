@@ -33,6 +33,7 @@ func (bf * BloomFilter) GetHashes(key []byte) []uint64 {
   for i := 0; i < bf.k; i++ {
    //This distributes values so that one hash function
    //can effectively act as k hash functions 
+   //https://www.eecs.harvard.edu/~michaelm/postscripts/rsa2008.pdf
    hs[i] = uint64(h1 + uint32(i)*h2)
   }
   return hs
