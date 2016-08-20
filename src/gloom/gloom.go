@@ -1,49 +1,84 @@
 package gloom
 
+
 import (
-  "hash/fnv"
-  "hash"
   "fmt"
+  "hash"
+  "hash/fnv"
 )
 
-type BitSet []uint64
-const FnvOffset = 14695981039346656037
-const FnvPrime = 1099511628211
 type BloomFilter struct {
-   m      uint
-   k      uint
-   bits   BitSet
-   hashes []uint64
+   m      int //number of bits in filter
+   k      int //number of hash functions
+   bits   []uint64
+   hash   hash.Hash64
 }
 
-func NewBloomFilter(m int, k int) *BloomFilter {
-  bits := make(BitSet, m)
-  for i := 0; i < k; i++ {
-    hashes[i] = GetFnvHash
+func NewFilter(m int, k int) *BloomFilter {
+  size := m / 64
+  if m % 64 > 0 {
+    size++
   }
-  return &BloomFilter{m,k,bits}
+  bits := make([]uint64, size)
+  return &BloomFilter{m,k,bits,fnv.New64a()}
 }
 
-func (bf *BloomFilter) PrintHashes() {
+func (bf * BloomFilter) GetHashes(key []byte) []uint64 {
+  bf.hash.Reset()
+  bf.hash.Write(key)
+  h := bf.hash.Sum64()
+  h1 := uint32(h)
+  h2 := uint32(h >> 32) 
+  hs := make([]uint64,bf.k)
   for i := 0; i < bf.k; i++ {
-    fmt.Print(bf.hashes[i])
-    fmt.Println()
+   //This distributes values so that one hash function
+   //can effectively act as k hash functions 
+   hs[i] = uint64(h1 + uint32(i)*h2)
+  }
+  return hs
+}
+
+func (bf *BloomFilter) HashLoc(h uint64) (chnk uint64,shft uint64) {
+    bitInd := h % uint64(bf.m)
+    chnkInd := bitInd / 64
+    shftInd := bitInd - chnkInd*64
+    return chnkInd, shftInd
+}
+
+func (bf *BloomFilter) Has(data []byte) bool {
+  hs := bf.GetHashes(data)
+  for i := 0; i < bf.k; i++ {
+    hk := hs[i]
+    chnk, shft := bf.HashLoc(hk)
+    if bf.bits[chnk] ^ (1 << shft) == bf.bits[chnk] {
+      return false
+    }
+  }
+  return true
+}
+
+func (bf *BloomFilter) HasString(key string) bool {
+  return bf.Has([]byte(key))
+}
+
+func (bf *BloomFilter) Put(data []byte) *BloomFilter {
+  hs := bf.GetHashes(data)
+  for i := 0; i < bf.k; i++ {
+    hk := hs[i]
+    chnk, shft := bf.HashLoc(hk)
+    bf.bits[chnk] |= (1 << shft)
+  }
+  return bf
+}
+
+func (bf *BloomFilter) PutString(key string) *BloomFilter {
+  return bf.Put([]byte(key))
+}
+
+func (bf *BloomFilter) Print() {
+  for _, b := range bf.bits {
+    fmt.Printf("%64b\n",b)
   }
 }
 
-func (bf *BloomFilter) Add(data []byte) *BloomFilter {
-  
-  for i := uint(0); i < k; i++ {
-    bf.bits[
-  }
-}
 
-//returns FNV64-1a hash for byte array
-func GetFnvHash(data []byte) uint64 {
-  hash := FnvOffset
-  for _, byte := range data {
-    hash ^=  uint64(byte)
-    hash *= FnvPrime
-  }
-  return hash
-}
