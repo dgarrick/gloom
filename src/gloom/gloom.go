@@ -5,27 +5,43 @@ import (
   "fmt"
   "hash"
   "hash/fnv"
+  "math"
 )
 
 type BloomFilter struct {
-   m      int //number of bits in filter
-   k      int //number of hash functions
-   bits   []uint64
-   hash   hash.Hash64
+   m           int //number of bits in filter
+   k           int //number of hash functions
+   length      int //number of elements inserted in set 
+   bits        []uint64
+   hash        hash.Hash64
 }
 
-func NewFilter(m int, k int) *BloomFilter {
-  size := m / 64
+func NewFilter(size int, fpos float64) *BloomFilter {
+  m := GetOptimalM(size, fpos)
+  k := GetOptimalK(m, size)
+  chunks := m / 64
   if m % 64 > 0 {
-    size++
+    chunks++
   }
-  bits := make([]uint64, size)
-  return &BloomFilter{m,k,bits,fnv.New64a()}
+  bits := make([]uint64, chunks)
+  return &BloomFilter{m:m,k:k,bits:bits,hash:fnv.New64a()}
+}
+
+func (bf *BloomFilter) EstimateFalsePos() float64 {
+  return math.Pow(1.0 - math.Exp((-1.0 * float64(bf.k * bf.length)) / float64(bf.m)),  float64(bf.k))
+}
+
+func GetOptimalM (size int, fpos float64) int {
+  c := math.Pow(math.Log(2.0),2.0)
+  return int(math.Ceil((float64(-1 * size) * math.Log(fpos)) / c))
+}
+
+func GetOptimalK (m int, size int) int {
+  return int(math.Ceil(float64(m) / float64(size) * math.Log(2.0)))
 }
 
 func (bf * BloomFilter) GetHashes(key []byte) []uint64 {
-  bf.hash.Reset()
-  bf.hash.Write(key)
+  bf.hash.Sum(key)
   h := bf.hash.Sum64()
   h1 := uint32(h)
   h2 := uint32(h >> 32) 
@@ -68,6 +84,7 @@ func (bf *BloomFilter) Put(data []byte) *BloomFilter {
     chnk, shft := bf.HashLoc(hk)
     bf.bits[chnk] |= (1 << shft)
   }
+  bf.length++
   return bf
 }
 

@@ -2,10 +2,13 @@ package gloom
 
 import (
   "testing"
+  "fmt"
 )
 
-func TestSimple(t *testing.T) {
-  bf := NewFilter(128,3)
+func Test(t *testing.T) {
+  bf := NewFilter(300,0.001)
+  fmt.Println(bf.k)
+  fmt.Println(bf.m)
   bf.PutString("hello")
   bf.PutString("goodbye")
   if !bf.HasString("hello") {
@@ -13,5 +16,8 @@ func TestSimple(t *testing.T) {
   }
   if !bf.HasString("goodbye") {
     t.Error("goodbye not in filter!")
-  } 
+  }
+  fmt.Print("Optimal test false pos est: ")
+  fmt.Println(bf.EstimateFalsePos())
+  
 }
