@@ -11,7 +11,7 @@ import (
 type BloomFilter struct {
    m           int //number of bits in filter
    k           int //number of hash functions
-   length      int //number of elements inserted in set 
+   size      int //number of elements inserted in set 
    bits        []uint64
    hash        hash.Hash64
 }
@@ -24,11 +24,11 @@ func NewFilter(size int, fpos float64) *BloomFilter {
     chunks++
   }
   bits := make([]uint64, chunks)
-  return &BloomFilter{m:m,k:k,bits:bits,hash:fnv.New64a()}
+  return &BloomFilter{m,k,size,bits,fnv.New64a()}
 }
 
 func (bf *BloomFilter) EstimateFalsePos() float64 {
-  return math.Pow(1.0 - math.Exp((-1.0 * float64(bf.k * bf.length)) / float64(bf.m)),  float64(bf.k))
+  return math.Pow(1.0 - math.Exp((-1.0 * float64(bf.k * bf.size)) / float64(bf.m)),  float64(bf.k))
 }
 
 func GetOptimalM (size int, fpos float64) int {
@@ -84,7 +84,6 @@ func (bf *BloomFilter) Put(data []byte) *BloomFilter {
     chnk, shft := bf.HashLoc(hk)
     bf.bits[chnk] |= (1 << shft)
   }
-  bf.length++
   return bf
 }
 
