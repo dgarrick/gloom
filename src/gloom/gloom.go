@@ -9,22 +9,25 @@ import (
 )
 
 type BloomFilter struct {
-   m           int //number of bits in filter
-   k           int //number of hash functions
-   size      int //number of elements inserted in set 
-   bits        []uint64
-   hash        hash.Hash64
+   m             int //number of chunks in filter
+   k             int //number of hash functions
+   size          int //number of elements to be inserted in set 
+   chunks        []uint64
+   hash          hash.Hash64
 }
 
 func NewFilter(size int, fpos float64) *BloomFilter {
+  if size < 1 || fpos <= 0.0 || fpos >= 1.0 {
+    panic("Invalid parameters for Bloom Filter! Size must be > 1 and 0.0 < fpos < 1.0!")
+  }
   m := GetOptimalM(size, fpos)
   k := GetOptimalK(m, size)
-  chunks := m / 64
+  numchunks := m / 64
   if m % 64 > 0 {
-    chunks++
+    numchunks++
   }
-  bits := make([]uint64, chunks)
-  return &BloomFilter{m,k,size,bits,fnv.New64a()}
+  chunks := make([]uint64, numchunks)
+  return &BloomFilter{m,k,size,chunks,fnv.New64a()}
 }
 
 func (bf *BloomFilter) EstimateFalsePos() float64 {
@@ -66,7 +69,7 @@ func (bf *BloomFilter) Has(data []byte) bool {
   for i := 0; i < bf.k; i++ {
     hk := hs[i]
     chnk, shft := bf.HashLoc(hk)
-    if bf.bits[chnk] ^ (1 << shft) == bf.bits[chnk] {
+    if bf.chunks[chnk] ^ (1 << shft) == bf.chunks[chnk] {
       return false
     }
   }
@@ -82,7 +85,7 @@ func (bf *BloomFilter) Put(data []byte) *BloomFilter {
   for i := 0; i < bf.k; i++ {
     hk := hs[i]
     chnk, shft := bf.HashLoc(hk)
-    bf.bits[chnk] |= (1 << shft)
+    bf.chunks[chnk] |= (1 << shft)
   }
   return bf
 }
@@ -92,7 +95,7 @@ func (bf *BloomFilter) PutString(key string) *BloomFilter {
 }
 
 func (bf *BloomFilter) Print() {
-  for _, b := range bf.bits {
+  for _, b := range bf.chunks {
     fmt.Printf("%64b\n",b)
   }
 }
