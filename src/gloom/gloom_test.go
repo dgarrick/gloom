@@ -16,24 +16,31 @@ func RandString(n int) string {
 }
 
 func FilterTest(size int, strsize int, fpos float64) bool {
-  bf := NewFilter(size,fpos)
-  strs := make([]string,size)
-  rand.Seed(time.Now().UnixNano())
-  for i := 0; i < size; i++ {
-    str := RandString(rand.Intn(strsize))
-    strs[i] = str
-    bf.PutString(str)
-  }
-  for i := 0; i < size; i++ {
-    if !bf.HasString(strs[i]) {
-      return false
+  bf,err := NewFilter(size,fpos)
+  if err == nil {
+    strs := make([]string,size)
+    rand.Seed(time.Now().UnixNano())
+    for i := 0; i < size; i++ {
+      str := RandString(rand.Intn(strsize))
+      strs[i] = str
+      bf.PutString(str)
     }
+    for i := 0; i < size; i++ {
+      if !bf.HasString(strs[i]) {
+        return false
+      }
+    }
+    return true
+  } else {
+    return false
   }
-  return true
 }
 
 func TestSimple(t *testing.T) {
-  bf := NewFilter(300,0.001)
+  bf,err := NewFilter(300,0.001)
+  if err != nil {
+    t.Error("Error creating simple filter!")
+  }
   if(bf.m != 4314) {
     t.Error("M is not optimal!")
   }
@@ -50,6 +57,17 @@ func TestSimple(t *testing.T) {
   }
   if(bf.EstimateFalsePos() > 0.001) {
     t.Error("false pos estimate is not optimal!")
+  }
+}
+
+func TestError(t *testing.T) {
+  _, err1 := NewFilter(0,1.1)
+  if err1 == nil {
+    t.Error("Filter constructed with bad arguments!")
+  }
+  _, err2 := NewFilter(-1, 0.0)
+  if err2 == nil { 
+    t.Error("Filter constructed with bad arguments!")
   }
 }
 

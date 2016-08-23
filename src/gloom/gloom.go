@@ -6,6 +6,7 @@ import (
   "hash"
   "hash/fnv"
   "math"
+  "errors"
 )
 
 type BloomFilter struct {
@@ -16,9 +17,9 @@ type BloomFilter struct {
    hash          hash.Hash64
 }
 
-func NewFilter(size int, fpos float64) *BloomFilter {
+func NewFilter(size int, fpos float64) (*BloomFilter, error) {
   if size < 1 || fpos <= 0.0 || fpos >= 1.0 {
-    panic("Invalid parameters for Bloom Filter! Size must be > 1 and 0.0 < fpos < 1.0!")
+    return nil, errors.New("Bad arguments for bloom filter: size must be >= 1 and 0.0 < fpos < 1.0!")
   }
   m := OptimalM(size, fpos)
   k := OptimalK(m, size)
@@ -27,7 +28,7 @@ func NewFilter(size int, fpos float64) *BloomFilter {
     numchunks++
   }
   chunks := make([]uint64, numchunks)
-  return &BloomFilter{m,k,size,chunks,fnv.New64a()}
+  return &BloomFilter{m,k,size,chunks,fnv.New64a()}, nil
 }
 
 func (bf *BloomFilter) EstimateFalsePos() float64 {
@@ -55,7 +56,7 @@ func (bf * BloomFilter) GetHashes(key []byte) []uint64 {
   return hs
 }
 
-func (bf *BloomFilter) HashLoc(h uint64) (chnk uint64,shft uint64) {
+func (bf *BloomFilter) HashLoc(h uint64) (chnk uint64, shft uint64) {
     bitInd := h % uint64(bf.m)
     chnkInd := bitInd / 64
     shftInd := bitInd - chnkInd*64
