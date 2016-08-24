@@ -98,5 +98,3 @@ func (bf *BloomFilter) Print() {
     fmt.Printf("%64b\n",b)
   }
 }
-
-
