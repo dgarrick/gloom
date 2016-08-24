@@ -48,19 +48,19 @@ func (bf * BloomFilter) GetHashes(key []byte) []uint64 {
   h := bf.hash.Sum64()
   hs := make([]uint64,bf.k)
   for i := 0; i < bf.k; i++ {
-   //This distributes values so that one hash function
-   //can effectively act as k hash functions 
-   //for more info, see: Kirsch and Mitzenmacher 
-   hs[i] = uint64(uint32(h) + uint32(i) * uint32(h >> 32))
+    //This distributes values so that one hash function
+    //can effectively act as k hash functions 
+    //for more info, see: Kirsch and Mitzenmacher 
+    hs[i] = uint64(uint32(h) + uint32(i) * uint32(h >> 32))
   }
   return hs
 }
 
 func (bf *BloomFilter) HashLoc(h uint64) (chnk uint64, shft uint64) {
-    bitInd := h % uint64(bf.m)
-    chnkInd := bitInd / 64
-    shftInd := bitInd - chnkInd*64
-    return chnkInd, shftInd
+  bitInd := h % uint64(bf.m)
+  chnkInd := bitInd / 64
+  shftInd := bitInd - chnkInd*64
+  return chnkInd, shftInd
 }
 
 func (bf *BloomFilter) Has(data []byte) bool {
