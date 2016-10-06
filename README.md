@@ -1,4 +1,4 @@
-# gloom
+# gloom [![Build Status](https://travis-ci.org/dgarrick/gloom.svg?branch=master)](https://travis-ci.org/dgarrick/gloom)
 Simple bloom filter implemented in golang
 
 ## usage
