@@ -50,6 +50,8 @@ func (bf *BloomFilter) getHashes(key []byte) []uint64 {
 		//This distributes values so that one hash function
 		//can effectively act as k hash functions
 		//for more info, see: Kirsch and Mitzenmacher
+		//full disclosure: I discovered this tidbit from the Bloom Filter wikipedia entry:
+		//https://en.wikipedia.org/wiki/Bloom_filter#cite_ref-3
 		hs[i] = uint64(uint32(h) + uint32(i)*uint32(h>>32))
 	}
 	bf.hash.Reset()
